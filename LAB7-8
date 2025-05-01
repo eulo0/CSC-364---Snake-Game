@@ -298,7 +298,6 @@ jal IncreaseDifficulty
 # Check for Direction Change
 ######################################################
 InputCheck:
-jal DrawFruit
 lw $a0, gameSpeed
 jal Pause
 
@@ -623,12 +622,6 @@ beq $v0, 1, AddLength #if  was eaten, add length
 # checks the fruitstate to draw fruit
 lw $t0, fruitState
 
-#draw the 
-lw $a0, PositionX
-lw $a1, PositionY
-jal CoordinateToAddress
-add $a0, $v0, $zero
-
 # sets the color
 li $t1, 0
 beq $t0, $t1, DrawOrange
@@ -642,29 +635,58 @@ beq $t0, $t1, DrawCyan
 li $t1, 3
 beq $t0, $t1, DrawLightGreen
 
-jr $ra
-
 # fallback
 j InputCheck
 
 DrawOrange:
+lw $a0, PositionX
+lw $a1, PositionY
+jal CoordinateToAddress
+add $a0, $v0, $zero
 lw $a1, Color
 jal DrawPixel
 jr $ra
 
 DrawPurple:
+lw $a0, fruit2X
+lw $a1, fruit2Y
+jal CoordinateToAddress
+add $a0, $v0, $zero
 lw $a1, Color2
 jal DrawPixel
 jr $ra
 
 DrawCyan:
+lw $a0, fruit3X
+lw $a1, fruit3Y
+jal CoordinateToAddress
+add $a0, $v0, $zero
 lw $a1, Color3
 jal DrawPixel
 jr $ra
 
 DrawLightGreen:
+lw $a0, fruit4X
+lw $a1, fruit4Y
+jal CoordinateToAddress
+add $a0, $v0, $zero
 lw $a1, Color4
 jal DrawPixel
+
+#decrement fruit timer
+lw $t0, fruitTimer
+addiu $t0, $t0, -1
+sw $t0, fruitTimer
+
+#if timer done, move to next fruit
+blez $t0, ExpireLightGreen 
+jr $ra
+
+ExpireLightGreen:
+li $t0, 0
+sw $t0, fruitTimer
+sw $t0, fruitState # back to orange
+jal SpawnFruit
 jr $ra
 
 AddLength:
@@ -829,44 +851,54 @@ jr $ra
 # 1 - does hit 
 ##################################################################
 CheckFruitCollision:
-#get  coordinates
-lw $t0, PositionX
-lw $t1, PositionY
 #set $v0 to zero, to default to no collision
 add $v0, $zero, $zero
-
-#check first to see if x is equal
-beq $a0, $t0, XEqualFruit
-#if not equal end function
-j ExitCollisionCheck
-
-XEqualFruit:
-#check to see if the y is equal
-beq $a1, $t1, YEqualFruit
-#if not eqaul end function
-j ExitCollisionCheck
-
-YEqualFruit:
-#Loads the current fruit state
 lw $t2, fruitState
 
-#Orange
+li $t3, 0
+beq $t2, $t3, CollideOrange
+li $t3, 1
+beq $t2, $t3, CollidePurple
+li $t3, 2
+beq $t2, $t3, CollideCyan
+li $t3, 3
+beq $t2, $t3, CollideLightGreen
+jr $ra
+
+CollideOrange: 
+lw $t0, PositionX
+lw $t1, PositionY
+j CheckMatch
+
+CollidePurple:
+lw $t0, fruit2X
+lw $t1, fruit2Y
+j CheckMatch
+
+CollideCyan:
+lw $t0, fruit3X
+lw $t1, fruit3Y
+j CheckMatch
+
+CollideLightGreen:
+lw $t0, fruit4X
+lw $t1, fruit4Y
+j CheckMatch
+
+CheckMatch:
+bne $a0, $t0, NoCollision
+bne $a1, $t1, NoCollision
+
+# handle different types
+lw $t2, fruitState
 li $t3, 0
 beq $t2, $t3, HandleOrange
-
-#Pruple
 li $t3, 1
 beq $t2, $t3, HandlePurple
-
-#Cyan
 li $t3, 2
 beq $t2, $t3, HandleCyan
-
-#Light Green
 li $t3, 3
 beq $t2, $t3, HandleLightGreen
-
-j ExitCollisionCheck
 
 HandleOrange:
 #update the score as fruit has been eaten
@@ -888,10 +920,9 @@ li $a3, 127
 syscall
 # grows snake
 li $s1, 1
-
-jal NextFruit
 li $v0, 1
-j ExitCollisionCheck
+jal NextFruit
+jr $ra
 
 HandlePurple:
 # changes direction randomly
@@ -926,9 +957,9 @@ j ApplyRandDir
 
 ApplyRandDir:
 sw $a1, direction #store new direction
-jal NextFruit
 li $v0, 1
-j ExitCollisionCheck
+jal NextFruit
+jr $ra
 
 HandleCyan:
 #speed up snake
@@ -937,17 +968,19 @@ addiu $t0, $t0, -50
 li $t1, 50
 bge $t0, $t1, SpeedOK
 move $t0, $t1
+
 SpeedOK:
 sw $t0, gameSpeed
-jal NextFruit
 li $v0, 1
-j ExitCollisionCheck
+jal NextFruit
+jr $ra
 
 HandleLightGreen:
 j Exit #bomb = instant death
 
-NoFruitCollison:
+NoCollision:
 li $v0, 0
+jr $ra
 
 NextFruit:
 lw $t0, fruitState
