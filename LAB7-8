@@ -76,6 +76,7 @@ locationInArray: .word 0
 #Fruit Information
 fruitPositionX: .word
 fruitPositionY: .word
+
 .text
 main:
 ######################################################
@@ -315,17 +316,28 @@ SpawnFruit:
 InputCheck:
 lw $a0, gameSpeed
 jal Pause
+
+lw $t7, direction
+
 #get the coordinates for direction change if needed
 lw $a0, snakeHeadX
 lw $a1, snakeHeadY
 jal CoordinateToAddress
-add $a2, $v0, $zero
+move $a2, $v0
+
 #get the input from the keyboard
 li $t0, 0xffff0000
 lw $t1, ($t0)
 andi $t1, $t1, 0x0001
-beqz $t1, SelectDrawDirection #if no new input, draw in same direction
+beqz $t1, SelectDrawDirection
+
 lw $a1, 4($t0) #store direction based on input
+lw $a0, direction
+jal CheckDirection
+beqz $v0, SelectDrawDirection
+sw $a1, direction
+move $t7, $a1
+
 DirectionCheck:
 lw $a0, direction # load current direction into #a0
 jal CheckDirection #check to see if the direction is valid
@@ -629,15 +641,21 @@ j CheckCyan
 
 DoReverse:
 lw $t2, direction
+move $a0, $t2
+
 li $t3, 119
 beq $t2, $t3, DirDown
+
 li $t3, 115
 beq $t2, $t3, DirUp
+
 li $t3, 97
 beq $t2, $t3, DirRight
+
 li $t3, 100
 beq $t2, $t3, DirLeft
-j CheckCyan
+
+j AfterReverse
 
 DirUp: 
 li $t2, 115
@@ -653,10 +671,31 @@ j StoreNewDir
 
 DirRight: 
 li $t2, 97
+j StoreNewDir
 
 StoreNewDir:
-sw $t2, direction
+    # Get head coordinates to form $a2 (address) for direction change
+    lw $a0, snakeHeadX
+    lw $a1, snakeHeadY
+    jal CoordinateToAddress
+    move $a2, $v0          # $a2 = coordinate address
 
+    lw $a0, direction      # reload current direction
+    move $a1, $t3          # new direction to test
+    jal CheckDirection     # simulate input-based direction change
+    move $t7, $t3          # set new direction into $t7 for next move
+
+AfterReverse:
+# respawn purple fruit here
+li $v0, 42
+li $a1, 62
+syscall
+addiu $a0, $a0, 1
+sw $a0, fruitReverseX
+syscall
+addiu $a0, $a0, 1
+sw $a0, fruitReverseY
+j CheckCyan
 
 # Check cyan fruit
 CheckCyan:
@@ -675,6 +714,16 @@ addiu $t3, $t3, -30
 slti $t4, $t3, 50
 beq $t4, 1, SetMinSpeed
 sw $t3, gameSpeed
+# Respawn cyan fruit
+li $v0, 42
+li $a1, 62
+syscall
+addiu $a0, $a0, 1
+sw $a0, fruitSpeedX
+syscall
+addiu $a0, $a0, 1
+sw $a0, fruitSpeedY
+
 j CheckBomb
 
 SetMinSpeed:
