@@ -640,52 +640,105 @@ beq $t9, $t1, DoReverse
 j CheckCyan
 
 DoReverse:
-lw $t2, direction
-move $a0, $t2
+# Try UP (119)
+lw $t2, direction         # current direction
+li $t3, 115               # down (invalid if we're going up)
+beq $t2, 119, SkipUp      # skip if already going up
+beq $t2, $t3, SkipUp      # skip if opposite of up
+lw $a0, snakeHeadX
+lw $a1, snakeHeadY
+addiu $a1, $a1, -1        # simulate moving up
+jal CoordinateToAddress
+lw $t4, 0($v0)            # color at that location
+lw $t5, snakeColor
+lw $t6, borderColor
+beq $t4, $t5, SkipUp
+beq $t4, $t6, SkipUp
+li $t2, 119               # set new direction to up
+j SetDirection
 
-li $t3, 119
-beq $t2, $t3, DirDown
-
-li $t3, 115
-beq $t2, $t3, DirUp
-
+SkipUp:
+# Try RIGHT (100)
 li $t3, 97
-beq $t2, $t3, DirRight
-
-li $t3, 100
-beq $t2, $t3, DirLeft
-
-j AfterReverse
-
-DirUp: 
-li $t2, 115
-j StoreNewDir
-
-DirDown: 
-li $t2, 119
-j StoreNewDir
-
-DirLeft: 
+beq $t2, 100, SkipRight
+beq $t2, $t3, SkipRight
+lw $a0, snakeHeadX
+lw $a1, snakeHeadY
+addiu $a0, $a0, 1
+jal CoordinateToAddress
+lw $t4, 0($v0)
+beq $t4, $t5, SkipRight
+beq $t4, $t6, SkipRight
 li $t2, 100
-j StoreNewDir
+j SetDirection
 
-DirRight: 
+SkipRight:
+# Try DOWN (115)
+li $t3, 119
+beq $t2, 115, SkipDown
+beq $t2, $t3, SkipDown
+lw $a0, snakeHeadX
+lw $a1, snakeHeadY
+addiu $a1, $a1, 1
+jal CoordinateToAddress
+lw $t4, 0($v0)
+beq $t4, $t5, SkipDown
+beq $t4, $t6, SkipDown
+li $t2, 115
+j SetDirection
+
+SkipDown:
+# Try LEFT (97)
+li $t3, 100
+beq $t2, 97, EndReverse
+beq $t2, $t3, EndReverse
+lw $a0, snakeHeadX
+lw $a1, snakeHeadY
+addiu $a0, $a0, -1
+jal CoordinateToAddress
+lw $t4, 0($v0)
+beq $t4, $t5, EndReverse
+beq $t4, $t6, EndReverse
 li $t2, 97
-j StoreNewDir
+
+SetDirection:
+sw $t2, direction
+move $t7, $t2
 
 StoreNewDir:
-    # Get head coordinates to form $a2 (address) for direction change
+    # Get head coordinates *before* direction changes
     lw $a0, snakeHeadX
     lw $a1, snakeHeadY
     jal CoordinateToAddress
-    move $a2, $v0          # $a2 = coordinate address
+    move $a2, $v0            # $a2 = current head address
 
-    lw $a0, direction      # reload current direction
-    move $a1, $t3          # new direction to test
-    jal CheckDirection     # simulate input-based direction change
-    move $t7, $t3          # set new direction into $t7 for next move
+    li $a0, 0                # Temporarily dummy current direction (not used)
+    move $a1, $t2            # $a1 = new direction we want to force
+    li $v0, 1                # Force acceptability
+    # MANUALLY insert turn into arrays instead of calling CheckDirection
+    lw $t4, arrayPosition
+    la $t2, directionChangeAddressArray
+    la $t3, newDirectionChangeArray
+    add $t2, $t2, $t4
+    add $t3, $t3, $t4
+    sw $a2, 0($t2)           # store coordinate
+    sw $a1, 0($t3)           # store new direction
+    addiu $t4, $t4, 4
+    bne $t4, 396, SkipReset
+    li $t4, 0
+SkipReset:
+    sw $t4, arrayPosition
 
-AfterReverse:
+    # Now apply the new direction
+    sw $a1, direction
+    move $t7, $a1
+
+    j EndReverse
+
+
+
+
+EndReverse:
 # respawn purple fruit here
 li $v0, 42
 li $a1, 62
@@ -696,6 +749,7 @@ syscall
 addiu $a0, $a0, 1
 sw $a0, fruitReverseY
 j CheckCyan
+
 
 # Check cyan fruit
 CheckCyan:
