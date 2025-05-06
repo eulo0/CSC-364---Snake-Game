@@ -18,34 +18,38 @@
 #Screen
 screenWidth: .word 64
 screenHeight: .word 64
-
 #Colors
-snakeColor: .word 0xFF0000 # red
+snakeColor: .word 0x0066cc # blue
 backgroundColor:.word 0x000000 # black
 borderColor: .word 0x00ff00 # green
-Color: .word 0xcc6611 # orange
-Color2: .word 0xCF00FF # purple
-Color3: .word 0x00FFE7 # cyan
-Color4: .word 0x09FF00 # light green
+fruitColor: .word 0xcc6611 # orange
+
+# Colors for new fruits
+fruitColorReverse: .word 0x800080  # Purple - reverses direction
+fruitColorSpeed: .word 0x00ffff    # Cyan - increases speed
+fruitColorBomb: .word 0x99ff99     # Light green - bomb kills snake
+
+# Position variables for new fruits:
+fruitReverseX: .word 0
+fruitReverseY: .word 0
+fruitSpeedX: .word 0
+fruitSpeedY: .word 0
+fruitBombX: .word 0
+fruitBombY: .word 0
 
 #score variable
 score: .word 0
-
-#stores how many points are recieved for eating a 
+#stores how many points are recieved for eating a fruit
 #increases as program gets harder
 scoreGain: .word 10
-
 #speed the snake moves at, increases as game progresses
 gameSpeed: .word 200
-
 #array to store the scores in which difficulty should increase
 scoreMilestones: .word 100, 250, 500, 1000, 5000, 10000
 scoreArrayPosition: .word 0
-
 #end game message
 lostMessage: .asciiz "You have died.... Your score was: "
 replayMessage: .asciiz "Would you like to replay?"
-
 #Snake Information
 snakeHeadX: .word 31
 snakeHeadY: .word 31
@@ -53,7 +57,6 @@ snakeTailX: .word 31
 snakeTailY: .word 37
 direction: .word 119 #initially moving up
 tailDirection: .word 119
-
 # direction variable
 # 119 - moving up - W
 # 115 - moving down - S
@@ -64,29 +67,15 @@ tailDirection: .word 119
 #once the tail hits a position in this array, its direction is changed
 #this is used to have the tail follow the head correctly
 directionChangeAddressArray: .word 0:100
-
 #this stores the new direction for the tail to move once it hits
 #an address in the above array
 newDirectionChangeArray: .word 0:100
-
 #stores the position of the end of the array (multiple of 4)
 arrayPosition: .word 0
 locationInArray: .word 0
-
 #Fruit Information
-PositionX: .word
-PositionY: .word
-fruit2X: .word
-fruit2Y: .word
-fruit3X: .word
-fruit3Y: .word
-fruit4X: .word
-fruit4Y: .word
-
-#Fruit cycle control
-fruitState: .word 0 # 0=orange, 1=purple, 2=cyan, 3=light green
-fruitTimer: .word 0 # counts how long light green fruit is on screen
-
+fruitPositionX: .word
+fruitPositionY: .word
 .text
 main:
 ######################################################
@@ -98,7 +87,6 @@ mul $a2, $a0, $a0 #total number of pixels on screen
 mul $a2, $a2, 4 #align addresses
 add $a2, $a2, $gp #add base of gp
 add $a0, $gp, $zero #loop counter
-
 FillLoop:
 beq $a0, $a2, Init
 sw $a1, 0($a0) #store color
@@ -125,7 +113,6 @@ sw $zero, arrayPosition
 sw $zero, locationInArray
 sw $zero, scoreArrayPosition
 sw $zero, score
-
 ClearRegisters:
 li $v0, 0
 li $a0, 0
@@ -147,13 +134,11 @@ li $s1, 0
 li $s2, 0
 li $s3, 0
 li $s4, 0
-
 ######################################################
 # Draw Border
 ######################################################
 DrawBorder:
 li $t1, 0 #load Y coordinate for the left border
-
 LeftLoop:
 move $a1, $t1 #move y coordinate into $a1
 li $a0, 0 # load x direction to 0, doesnt change
@@ -164,7 +149,6 @@ jal DrawPixel #draw the color at the screen location
 add $t1, $t1, 1 #increment y coordinate
 bne $t1, 64, LeftLoop #loop through to draw entire left border
 li $t1, 0 #load Y coordinate for right border
-
 RightLoop:
 move $a1, $t1 #move y coordinate into $a1
 li $a0, 63 #set x coordinate to 63 (right side of screen)
@@ -175,7 +159,6 @@ jal DrawPixel #draw color at screen coordinates
 add $t1, $t1, 1 #increment y coordinate
 bne $t1, 64, RightLoop #loop through to draw entire right border
 li $t1, 0 #load X coordinate for top border
-
 TopLoop:
 move $a0, $t1 # move x coordinate into $a0
 li $a1, 0 # set y coordinate to zero for top of screen
@@ -186,7 +169,6 @@ jal DrawPixel #draw color at screen coordinates
 add $t1, $t1, 1 #increment X position
 bne $t1, 64, TopLoop #loop through to draw entire top border
 li $t1, 0 #load X coordinate for bottom border
-
 BottomLoop:
 move $a0, $t1 # move x coordinate to $a0
 li $a1, 63 # load Y coordinate for bottom of screen
@@ -196,7 +178,6 @@ lw $a1, borderColor #put color data into $a1
 jal DrawPixel #draw color at screen position
 add $t1, $t1, 1 #increment X coordinate
 bne $t1, 64, BottomLoop # loop through to draw entire bottom border
-
 ######################################################
 # Draw Initial Snake Position
 ######################################################
@@ -207,7 +188,6 @@ jal CoordinateToAddress #get screen coordinates
 move $a0, $v0 #copy coordinates to $a0
 lw $a1, snakeColor #store color into $a1
 jal DrawPixel #draw color at pixel
-
 #draw middle portion
 lw $a0, snakeHeadX #load x coordinate
 lw $a1, snakeHeadY #load y coordinate
@@ -216,7 +196,6 @@ jal CoordinateToAddress #get screen coordinates
 move $a0, $v0 #copy coordinates to $a0
 lw $a1, snakeColor #store color into $a1
 jal DrawPixel #draw color at pixel
-
 #TEST 8 PIXELS
 lw $a0, snakeHeadX #load x coordinate
 lw $a1, snakeHeadY #load y coordinate
@@ -253,46 +232,82 @@ jal CoordinateToAddress #get screen coordinates
 move $a0, $v0 #copy coordinates to $a0
 lw $a1, snakeColor #store color into $a1
 jal DrawPixel #draw color at pixel
-
 #draw snake tail
 lw $a0, snakeTailX #load x coordinate
 lw $a1, snakeTailY #load y coordinate
 jal CoordinateToAddress #get screen coordinates
 move $a0, $v0 #copy coordinates to $a0
 lw $a1, snakeColor #store color into $a1
-jal DrawPixel #draw color at pixel
+jal SpawnFruit      # Create fruits once at game start
+jal DrawFruit       # Draw them to screen
+j InputCheck        # Start the game loop
 
-jal SpawnFruit
-jal DrawFruit
-j InputCheck
 
 ######################################################
 # Spawn Fruit
 ######################################################
 SpawnFruit:
-#syscall for random int with a upper bound
-li $v0, 42
-#upper bound 61 (0 <= $a0 < $a1)
-li $a1, 62
-syscall
-#increment the X position so it doesnt draw on a border
-addiu $a0, $a0, 1
-#store X position
-sw $a0, PositionX
-syscall
-#increment the Y position so it doesnt draw on a border
-addiu $a0, $a0, 1
-#store Y position
-sw $a0, PositionY
+    # Save registers
+    addiu $sp, $sp, -24
+    sw $a0, 0($sp)
+    sw $a1, 4($sp)
+    sw $a2, 8($sp)
+    sw $a3, 12($sp)
+    sw $ra, 16($sp)
+    sw $t0, 20($sp)
 
-# resets fruitTimer if at light green fruit
-lw $t0, fruitState
-li $t1, 3
-bne $t0, $t1, skipTimerReset
-li $t2, 30 # 30 ticks for light green fruit to survive
-sw $t2, fruitTimer
-skipTimerReset:
-jal IncreaseDifficulty
+    # Spawn orange fruit
+    li $v0, 42
+    li $a1, 62
+    syscall
+    addiu $a0, $a0, 1
+    sw $a0, fruitPositionX
+    syscall
+    addiu $a0, $a0, 1
+    sw $a0, fruitPositionY
+
+    # Spawn purple fruit
+    li $v0, 42
+    li $a1, 62
+    syscall
+    addiu $a0, $a0, 1
+    sw $a0, fruitReverseX
+    syscall
+    addiu $a0, $a0, 1
+    sw $a0, fruitReverseY
+
+    # Spawn cyan fruit
+    li $v0, 42
+    li $a1, 62
+    syscall
+    addiu $a0, $a0, 1
+    sw $a0, fruitSpeedX
+    syscall
+    addiu $a0, $a0, 1
+    sw $a0, fruitSpeedY
+
+    # Spawn bomb fruit
+    li $v0, 42
+    li $a1, 62
+    syscall
+    addiu $a0, $a0, 1
+    sw $a0, fruitBombX
+    syscall
+    addiu $a0, $a0, 1
+    sw $a0, fruitBombY
+
+    jal IncreaseDifficulty
+
+    # Restore registers
+    lw $a0, 0($sp)
+    lw $a1, 4($sp)
+    lw $a2, 8($sp)
+    lw $a3, 12($sp)
+    lw $ra, 16($sp)
+    lw $t0, 20($sp)
+    addiu $sp, $sp, 24
+
+    jr $ra
 
 ######################################################
 # Check for Direction Change
@@ -300,27 +315,23 @@ jal IncreaseDifficulty
 InputCheck:
 lw $a0, gameSpeed
 jal Pause
-
 #get the coordinates for direction change if needed
 lw $a0, snakeHeadX
 lw $a1, snakeHeadY
 jal CoordinateToAddress
 add $a2, $v0, $zero
-
 #get the input from the keyboard
 li $t0, 0xffff0000
 lw $t1, ($t0)
 andi $t1, $t1, 0x0001
 beqz $t1, SelectDrawDirection #if no new input, draw in same direction
 lw $a1, 4($t0) #store direction based on input
-
 DirectionCheck:
 lw $a0, direction # load current direction into #a0
 jal CheckDirection #check to see if the direction is valid
 beqz $v0, InputCheck #if input is not valid, get new input
 sw $a1, direction #store the new direction if valid
 lw $t7, direction #store the direction into $t7
-
 ######################################################
 # Update Snake Head position
 ######################################################
@@ -330,17 +341,14 @@ beq $t7, 119, DrawUpLoop
 beq $t7, 115, DrawDownLoop
 beq $t7, 97, DrawLeftLoop
 beq $t7, 100, DrawRightLoop
-
 #jump back to get input if an unsupported key was pressed
 j InputCheck
 DrawUpLoop:
-
 #check for collision before moving to next pixel
 lw $a0, snakeHeadX
 lw $a1, snakeHeadY
 lw $a2, direction
 jal CheckGameEndingCollision
-
 #draw head in new position, move Y position up
 lw $t0, snakeHeadX
 lw $t1, snakeHeadY
@@ -353,14 +361,12 @@ lw $a1, snakeColor
 jal DrawPixel
 sw $t1, snakeHeadY
 j UpdateTailPosition #head updated, update tail
-
 DrawDownLoop:
 #check for collision before moving to next pixel
 lw $a0, snakeHeadX
 lw $a1, snakeHeadY
 lw $a2, direction
 jal CheckGameEndingCollision
-
 #draw head in new position, move Y position down
 lw $t0, snakeHeadX
 lw $t1, snakeHeadY
@@ -373,14 +379,12 @@ lw $a1, snakeColor
 jal DrawPixel
 sw $t1, snakeHeadY
 j UpdateTailPosition #head updated, update tail
-
 DrawLeftLoop:
 #check for collision before moving to next pixel
 lw $a0, snakeHeadX
 lw $a1, snakeHeadY
 lw $a2, direction
 jal CheckGameEndingCollision
-
 #draw head in new position, move X position left
 lw $t0, snakeHeadX
 lw $t1, snakeHeadY
@@ -393,14 +397,12 @@ lw $a1, snakeColor
 jal DrawPixel
 sw $t0, snakeHeadX
 j UpdateTailPosition #head updated, update tail
-
 DrawRightLoop:
 #check for collision before moving to next pixel
 lw $a0, snakeHeadX
 lw $a1, snakeHeadY
 lw $a2, direction
 jal CheckGameEndingCollision
-
 #draw head in new position, move X position right
 lw $t0, snakeHeadX
 lw $t1, snakeHeadY
@@ -413,7 +415,6 @@ lw $a1, snakeColor
 jal DrawPixel
 sw $t0, snakeHeadX
 j UpdateTailPosition #head updated, update tail
-
 ######################################################
 # Update Snake Tail Position
 ######################################################
@@ -424,7 +425,6 @@ beq $t2, 119, MoveTailUp
 beq $t2, 115, MoveTailDown
 beq $t2, 97, MoveTailLeft
 beq $t2, 100, MoveTailRight
-
 MoveTailUp:
 #get the screen coordinates of the next direction change
 lw $t8, locationInArray
@@ -437,7 +437,6 @@ lw $a1, snakeTailY
 beq $s1, 1, IncreaseLengthUp #branch if length should be increased
 addiu $a1, $a1, -1 #change tail position if no length change
 sw $a1, snakeTailY
-
 IncreaseLengthUp:
 li $s1, 0 #set flag back to false
 jal CoordinateToAddress
@@ -448,7 +447,6 @@ add $t3, $t3, $t8
 lw $t9, 0($t3)
 sw $t9, tailDirection
 addiu $t8,$t8,4
-
 #if the index is out of bounds, set back to zero
 bne $t8, 396, StoreLocationUp
 li $t8, 0
@@ -457,7 +455,6 @@ sw $t8, locationInArray
 DrawTailUp:
 lw $a1, snakeColor
 jal DrawPixel
-
 #erase behind the snake
 lw $t0, snakeTailX
 lw $t1, snakeTailY
@@ -468,8 +465,7 @@ jal CoordinateToAddress
 add $a0, $v0, $zero
 lw $a1, backgroundColor
 jal DrawPixel
-j DrawFruit #finished updating snake, update 
-
+j  DrawFruit #finished updating snake, update fruit
 MoveTailDown:
 #get the screen coordinates of the next direction change
 lw $t8, locationInArray
@@ -481,7 +477,6 @@ lw $a1, snakeTailY
 beq $s1, 1, IncreaseLengthDown #branch if length should be increased
 addiu $a1, $a1, 1 #change tail position if no length change
 sw $a1, snakeTailY
-
 IncreaseLengthDown:
 li $s1, 0 #set flag back to false
 jal CoordinateToAddress
@@ -510,7 +505,7 @@ jal CoordinateToAddress
 add $a0, $v0, $zero
 lw $a1, backgroundColor
 jal DrawPixel
-j DrawFruit #finished updating snake, update 
+j  DrawFruit #finished updating snake, update fruit
 MoveTailLeft:
 #update the tail position when moving left
 lw $t8, locationInArray
@@ -550,7 +545,7 @@ jal CoordinateToAddress
 add $a0, $v0, $zero
 lw $a1, backgroundColor
 jal DrawPixel
-j DrawFruit #finished updating snake, update 
+j  DrawFruit #finished updating snake, update fruit
 MoveTailRight:
 #get the screen coordinates of the next direction change
 lw $t8, locationInArray
@@ -607,92 +602,138 @@ jal CoordinateToAddress
 add $a0, $v0, $zero
 lw $a1, backgroundColor
 jal DrawPixel
-
-j DrawFruit #finished updating snake, update 
+j  DrawFruit #finished updating snake, update fruit
 ######################################################
 # Draw Fruit
 ######################################################
 DrawFruit:
-#check collision with 
-lw $a0, snakeHeadX
-lw $a1, snakeHeadY
+# Save head coordinates
+lw $t8, snakeHeadX
+lw $t9, snakeHeadY
+
+# Check orange fruit
+move $a0, $t8
+move $a1, $t9
 jal CheckFruitCollision
-beq $v0, 1, AddLength #if  was eaten, add length
+beq $v0, 1, AddLength
 
-# checks the fruitstate to draw fruit
-lw $t0, fruitState
+# Check purple fruit
+lw $t0, fruitReverseX
+lw $t1, fruitReverseY
+beq $t8, $t0, CheckRevY
+j CheckCyan
 
-# sets the color
-li $t1, 0
-beq $t0, $t1, DrawOrange
+CheckRevY:
+beq $t9, $t1, DoReverse
+j CheckCyan
 
-li $t1, 1
-beq $t0, $t1, DrawPurple
+DoReverse:
+lw $t2, direction
+li $t3, 119
+beq $t2, $t3, DirDown
+li $t3, 115
+beq $t2, $t3, DirUp
+li $t3, 97
+beq $t2, $t3, DirRight
+li $t3, 100
+beq $t2, $t3, DirLeft
+j CheckCyan
 
-li $t1, 2
-beq $t0, $t1, DrawCyan
+DirUp: 
+li $t2, 115
+j StoreNewDir
 
-li $t1, 3
-beq $t0, $t1, DrawLightGreen
+DirDown: 
+li $t2, 119
+j StoreNewDir
 
-# fallback
+DirLeft: 
+li $t2, 100
+j StoreNewDir
+
+DirRight: 
+li $t2, 97
+
+StoreNewDir:
+sw $t2, direction
+
+
+# Check cyan fruit
+CheckCyan:
+lw $t0, fruitSpeedX
+lw $t1, fruitSpeedY
+beq $t8, $t0, CheckCyanY
+j CheckBomb
+
+CheckCyanY:
+beq $t9, $t1, DoSpeed
+j CheckBomb
+
+DoSpeed:
+lw $t3, gameSpeed
+addiu $t3, $t3, -30
+slti $t4, $t3, 50
+beq $t4, 1, SetMinSpeed
+sw $t3, gameSpeed
+j CheckBomb
+
+SetMinSpeed:
+li $t3, 50
+sw $t3, gameSpeed
+
+
+# Check bomb fruit
+CheckBomb:
+lw $t0, fruitBombX
+lw $t1, fruitBombY
+beq $t8, $t0, CheckBombY
+j DrawAllFruits
+
+CheckBombY:
+beq $t9, $t1, Exit
+
+DrawAllFruits:
+# draw orange
+lw $a0, fruitPositionX
+lw $a1, fruitPositionY
+jal CoordinateToAddress
+move $a0, $v0
+lw $a1, fruitColor
+jal DrawPixel
+
+# draw purple
+lw $a0, fruitReverseX
+lw $a1, fruitReverseY
+jal CoordinateToAddress
+move $a0, $v0
+lw $a1, fruitColorReverse
+jal DrawPixel
+
+# draw cyan
+lw $a0, fruitSpeedX
+lw $a1, fruitSpeedY
+jal CoordinateToAddress
+move $a0, $v0
+lw $a1, fruitColorSpeed
+jal DrawPixel
+
+# draw bomb
+lw $a0, fruitBombX
+lw $a1, fruitBombY
+jal CoordinateToAddress
+move $a0, $v0
+lw $a1, fruitColorBomb
+jal DrawPixel
+
+# loop back into game
 j InputCheck
 
-DrawOrange:
-lw $a0, PositionX
-lw $a1, PositionY
-jal CoordinateToAddress
-add $a0, $v0, $zero
-lw $a1, Color
-jal DrawPixel
-jr $ra
-
-DrawPurple:
-lw $a0, fruit2X
-lw $a1, fruit2Y
-jal CoordinateToAddress
-add $a0, $v0, $zero
-lw $a1, Color2
-jal DrawPixel
-jr $ra
-
-DrawCyan:
-lw $a0, fruit3X
-lw $a1, fruit3Y
-jal CoordinateToAddress
-add $a0, $v0, $zero
-lw $a1, Color3
-jal DrawPixel
-jr $ra
-
-DrawLightGreen:
-lw $a0, fruit4X
-lw $a1, fruit4Y
-jal CoordinateToAddress
-add $a0, $v0, $zero
-lw $a1, Color4
-jal DrawPixel
-
-#decrement fruit timer
-lw $t0, fruitTimer
-addiu $t0, $t0, -1
-sw $t0, fruitTimer
-
-#if timer done, move to next fruit
-blez $t0, ExpireLightGreen 
-jr $ra
-
-ExpireLightGreen:
-li $t0, 0
-sw $t0, fruitTimer
-sw $t0, fruitState # back to orange
-jal SpawnFruit
-jr $ra
-
 AddLength:
-li $s1, 1 #flag to increase snake length
-j SpawnFruit
-jr $ra
+li $s1, 1
+jal SpawnFruit
+j InputCheck
+
+
 ##################################################################
 #CoordinatesToAddress Function
 # $a0 -> x coordinate
@@ -707,7 +748,6 @@ add $v0, $v0, $a0 #add the x position
 mul $v0, $v0, 4 #multiply by 4
 add $v0, $v0, $gp #add global pointerfrom bitmap display
 jr $ra # return $v0
-
 ##################################################################
 #Draw Function
 # $a0 -> Address position to draw at
@@ -718,7 +758,6 @@ jr $ra # return $v0
 DrawPixel:
 sw $a1, ($a0) #fill the coordinate with specified color
 jr $ra #return
-
 ##################################################################
 # Check Acceptable Direction
 # $a0 - current direction
@@ -847,60 +886,26 @@ jr $ra
 # $a1 - snakeHeadPositionY
 ##################################################################
 # returns $v0:
-# 0 - does not hit 
-# 1 - does hit 
+# 0 - does not hit fruit
+# 1 - does hit fruit
 ##################################################################
 CheckFruitCollision:
+#get fruit coordinates
+lw $t0, fruitPositionX
+lw $t1, fruitPositionY
 #set $v0 to zero, to default to no collision
 add $v0, $zero, $zero
-lw $t2, fruitState
+#check first to see if x is equal
+beq $a0, $t0, XEqualFruit
+#if not equal end function
+j ExitCollisionCheck
 
-li $t3, 0
-beq $t2, $t3, CollideOrange
-li $t3, 1
-beq $t2, $t3, CollidePurple
-li $t3, 2
-beq $t2, $t3, CollideCyan
-li $t3, 3
-beq $t2, $t3, CollideLightGreen
-jr $ra
-
-CollideOrange: 
-lw $t0, PositionX
-lw $t1, PositionY
-j CheckMatch
-
-CollidePurple:
-lw $t0, fruit2X
-lw $t1, fruit2Y
-j CheckMatch
-
-CollideCyan:
-lw $t0, fruit3X
-lw $t1, fruit3Y
-j CheckMatch
-
-CollideLightGreen:
-lw $t0, fruit4X
-lw $t1, fruit4Y
-j CheckMatch
-
-CheckMatch:
-bne $a0, $t0, NoCollision
-bne $a1, $t1, NoCollision
-
-# handle different types
-lw $t2, fruitState
-li $t3, 0
-beq $t2, $t3, HandleOrange
-li $t3, 1
-beq $t2, $t3, HandlePurple
-li $t3, 2
-beq $t2, $t3, HandleCyan
-li $t3, 3
-beq $t2, $t3, HandleLightGreen
-
-HandleOrange:
+XEqualFruit:
+#check to see if the y is equal
+beq $a1, $t1, YEqualFruit
+#if not eqaul end function
+j ExitCollisionCheck
+YEqualFruit:
 #update the score as fruit has been eaten
 lw $t5, score
 lw $t6, scoreGain
@@ -918,84 +923,11 @@ li $a1, 250
 li $a2, 7
 li $a3, 127
 syscall
-# grows snake
-li $s1, 1
-li $v0, 1
-jal NextFruit
-jr $ra
-
-HandlePurple:
-# changes direction randomly
-li $v0, 42
-li $a1, 4 #gets random number 1-4
-syscall
-move $t4, $a0
-
-# map to WASD in ASCII
-li $t5, 119 #up
-li $t6, 115 #down
-li $t7, 97 #left
-li $t8, 100 #right
-
-beq $t4, 0, RandUp
-beq $t4, 1, RandDown
-beq $t4, 2, RandLeft
-beq $t4, 3, RandRight
-
-RandUp:
-li $a1, 199
-j ApplyRandDir
-RandDown:
-li $a1, 115
-j ApplyRandDir
-RandLeft:
-li $a1, 97
-j ApplyRandDir
-RandRight:
-li $a1, 100
-j ApplyRandDir
-
-ApplyRandDir:
-sw $a1, direction #store new direction
-li $v0, 1
-jal NextFruit
-jr $ra
-
-HandleCyan:
-#speed up snake
-lw $t0, gameSpeed
-addiu $t0, $t0, -50
-li $t1, 50
-bge $t0, $t1, SpeedOK
-move $t0, $t1
-
-SpeedOK:
-sw $t0, gameSpeed
-li $v0, 1
-jal NextFruit
-jr $ra
-
-HandleLightGreen:
-j Exit #bomb = instant death
-
-NoCollision:
-li $v0, 0
-jr $ra
-
-NextFruit:
-lw $t0, fruitState
-addiu $t0, $t0, 1
-li $t1, 4
-bne $t0, $t1, StoreNewFruit
-li $t0, 0 #wrap around to orange if passed light green
-
-StoreNewFruit:
-sw $t0, fruitState
-jal SpawnFruit
-jr $ra
-
+li $v0, 1 #set return value to 1 for collision
 ExitCollisionCheck:
 jr $ra
+
+
 ##################################################################
 # Check Snake Body Collision
 # $a0 - snakeHeadPositionX
@@ -1088,7 +1020,7 @@ addiu $t2, $t2, 4
 #store new position
 sw $t2, scoreArrayPosition
 #load the scoreGain variable to increase the
-#points awarded for eating 
+#points awarded for eating fruit
 lw $t0, scoreGain
 #multiply gain by 2
 sll $t0, $t0, 1
@@ -1100,7 +1032,6 @@ addiu $t1, $t1, -25
 sw $t1, gameSpeed
 FinishedDiff:
 jr $ra
-
 Exit:
 #play a sound tune to signify game over
 li $v0, 31
