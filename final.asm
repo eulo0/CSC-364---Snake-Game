@@ -3,7 +3,7 @@
 ######################################################################
 # Programmed by Shane Shafferman and Eric Deas #
 ######################################################################
-# Additions by Nathan Vanhoof, Elijiah Palmer, and Anousith Keomaly
+# Additions by Nathan Vanhoof, Elijah Palmer, and Anousith Keomaly
 ######################################################################
 # This program requires the Keyboard and Display MMIO #
 # and the Bitmap Display to be connected to MIPS. #
