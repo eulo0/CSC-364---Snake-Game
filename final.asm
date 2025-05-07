@@ -271,7 +271,7 @@ SpawnFruit:
     jal ClearOldFruitPosition
     
     SkipPurple:
-    beq $t0, 3, SkipCyan
+    beq $s5, 3, SkipCyan
     lw $a0, fruitSpeedX
     lw $a1, fruitSpeedY
     jal ClearOldFruitPosition
@@ -289,8 +289,8 @@ SpawnFruit:
     syscall 
     
     li $v0, 1
-    #lw $a0, score
-    lw $a0, locationInArray
+    lw $a0, score
+    #lw $a0, locationInArray
     syscall 
 
     # Spawn orange fruit
@@ -729,12 +729,6 @@ lw $t1, fruitBombY
 jal CheckFruitCollision
 beq $v0, 1, Exit
 
-# checks collision for cyan fruit
-lw $t0, fruitSpeedX
-lw $t1, fruitSpeedY
-jal CheckFruitCollision
-li $s5, 3
-beq $v0, 1, DoSpeed
 
 # checks collision for purple fruit
 lw $t0, fruitReverseX
@@ -742,6 +736,13 @@ lw $t1, fruitReverseY
 jal CheckFruitCollision
 li $s5, 2
 beq $v0, 1, DoReverse
+
+# checks collision for cyan fruit
+lw $t0, fruitSpeedX
+lw $t1, fruitSpeedY
+jal CheckFruitCollision
+li $s5, 3
+beq $v0, 1, DoSpeed
 
 # draw orange
 lw $a0, fruitPositionX
@@ -887,7 +888,6 @@ syscall
 addiu $a0, $a0, 1
 sw $a0, fruitReverseY
 j AddLength
-
 
 DoSpeed:
 lw $t3, gameSpeed
