@@ -257,148 +257,145 @@ j InputCheck        # Start the game loop
 # Spawn Fruit
 ######################################################
 SpawnFruit:
-    lw $t0, fruitLastEaten
+    lw $t0, fruitLastEaten # Loads the last fruit 1=orange, 2=purple, etc
     
-    beq $t0, 1, SkipOrange
-    lw $a0, fruitPositionX
-    lw $a1, fruitPositionY
-    jal ClearOldFruitPosition
+    beq $t0, 1, SkipOrange # If last fruit orange, skip clearing orange's position
+    lw $a0, fruitPositionX # Load X position of orange into $a0
+    lw $a1, fruitPositionY # Load Y position of orange into $a1
+    jal ClearOldFruitPosition # Call to clear orange last drawn position
     
     SkipOrange:
-    beq $t0, 2, SkipPurple
-    lw $a0, fruitReverseX
-    lw $a1, fruitReverseY
-    jal ClearOldFruitPosition
+    beq $t0, 2, SkipPurple # If last fruit pruple, skip clearing purple's position
+    lw $a0, fruitReverseX # Load X position of purple into $a0
+    lw $a1, fruitReverseY # Load Y position of purple into $a1
+    jal ClearOldFruitPosition # Call to clear purple last drawn position
     
     SkipPurple:
-    beq $s5, 3, SkipCyan
-    lw $a0, fruitSpeedX
-    lw $a1, fruitSpeedY
-    jal ClearOldFruitPosition
+    beq $s5, 3, SkipCyan # If last fruit cyan, skip clearing purple's position
+    lw $a0, fruitSpeedX # Load X position of cyan into $a0
+    lw $a1, fruitSpeedY # Load Y position of cyan into $a0
+    jal ClearOldFruitPosition # Call to clear cyan last drawn position
     
     SkipCyan:
-    lw $a0, fruitBombX
-    lw $a1, fruitBombY
-    jal ClearOldFruitPosition
+    lw $a0, fruitBombX # Load X position of light green into $a0
+    lw $a1, fruitBombY # Load Y position of light green into $a0
+    jal ClearOldFruitPosition # Call to clear light green last drawn position
     
     # Prints the score
-    li $v0, 4
-    la $a0, clearString
-    syscall
-    la $a0, scoreString
-    syscall 
+    li $v0, 4 # Print string 
+    la $a0, clearString # Load address of clearString
+    syscall # Print syscall
+    la $a0, scoreString # Load score
+    syscall # Print score
     
-    li $v0, 1
-    lw $a0, score
-    #lw $a0, locationInArray
-    syscall 
+    li $v0, 1 # Print integer syscall
+    lw $a0, score # Load current score to $a0
+    syscall # Print score
 
     # Spawn orange fruit
-    li $v0, 42
-    li $a1, 62
-    syscall
-    addiu $a0, $a0, 1
-    sw $a0, fruitPositionX
-    syscall
-    addiu $a0, $a0, 1
-    sw $a0, fruitPositionY
+    li $v0, 42 # Random number syscall
+    li $a1, 62 # Upperbound
+    syscall # Generate number
+    addiu $a0, $a0, 1 #Offset by 1
+    sw $a0, fruitPositionX # Store orange X
+    syscall # Generate another random number 
+    addiu $a0, $a0, 1 #Offset by 1
+    sw $a0, fruitPositionY # Store orange Y
 
     # Spawn purple fruit
-    li $v0, 42
-    li $a1, 62
-    syscall
-    addiu $a0, $a0, 1
-    sw $a0, fruitReverseX
-    syscall
-    addiu $a0, $a0, 1
-    sw $a0, fruitReverseY
+    li $v0, 42 # Random number syscall
+    li $a1, 62 # Upperbound
+    syscall # Generate number
+    addiu $a0, $a0, 1 #Offset by 1
+    sw $a0, fruitReverseX # Store purple X
+    syscall # Generate another random number 
+    addiu $a0, $a0, 1 #Offset by 1
+    sw $a0, fruitReverseY # Store purple Y
 
     # Spawn cyan fruit
-    li $v0, 42
-    li $a1, 62
-    syscall
-    addiu $a0, $a0, 1
-    sw $a0, fruitSpeedX
-    syscall
-    addiu $a0, $a0, 1
-    sw $a0, fruitSpeedY
+    li $v0, 42 # Random number syscall
+    li $a1, 62 # Upperbound
+    syscall # Generate number
+    addiu $a0, $a0, 1 #Offset by 1
+    sw $a0, fruitSpeedX # Store cyan X
+    syscall # Generate another random number 
+    addiu $a0, $a0, 1 #Offset by 1
+    sw $a0, fruitSpeedY # Store cyan Y
 
     # Spawn bomb fruit
-    li $v0, 42
-    li $a1, 62
-    syscall
-    addiu $a0, $a0, 1
-    sw $a0, fruitBombX
-    syscall
-    addiu $a0, $a0, 1
-    sw $a0, fruitBombY
+    li $v0, 42 # Random number syscall
+    li $a1, 62 # Upperbound
+    syscall # Generate number
+    addiu $a0, $a0, 1 #Offset by 1
+    sw $a0, fruitBombX # Store light green X
+    syscall # Generate another random number 
+    addiu $a0, $a0, 1 #Offset by 1
+    sw $a0, fruitBombY # Store light green Y
 
 # NEW: Clear direction arrays periodically to prevent overflow
     # Save return address before calling
-    #move $t8, $ra
-    #jal ClearDirectionArrays
-    # Restore return address
-    #move $ra, $t8 
+    # Restore return address # Restore return address
+    #move $ra, $t8 # Restore return address
 
-    jal IncreaseDifficulty
-    j InputCheck
+    jal IncreaseDifficulty # Call function to increase game difficulty 
+    j InputCheck # Jump to input
     
 ClearOldFruitPosition:
-move $t9, $ra
-add $t0, $a0, $0
-add $t1, $a1, $0
-jal CoordinateToAddress
-move $a0, $v0
-lw $a1, backgroundColor
-jal DrawPixel
-jr $t9
+move $t9, $ra # Save return address into $t9
+add $t0, $a0, $0 # Copy X coordinate 
+add $t1, $a1, $0 # Copy Y coordinate
+jal CoordinateToAddress # Convert X Y to coordinate 
+move $a0, $v0 # Move made coordinate for drawing pixel
+lw $a1, backgroundColor # Load background color to erase fruit
+jal DrawPixel # Draw pixel at (X,Y)
+jr $t9 # Return to $ra stored at $t9
 
 ######################################################
 # Clear Direction Arrays Function
 ######################################################
 ClearDirectionArrays:
     # Save return address
-    move $t9, $ra
+    move $t9, $ra # Save return address into $t9
     
     # Save current direction
-    lw $t6, direction
-    lw $t7, tailDirection
+    lw $t6, direction # Load current snake head direction into $t6
+    lw $t7, tailDirection # Load current snake tail direction into $t6
     
     # Reset array position counters
-    sw $zero, arrayPosition
-    sw $zero, locationInArray
+    sw $zero, arrayPosition # Reset the index counter for direction to 0
+    sw $zero, locationInArray # Reset the secound index to 0
     
     # Zero out the arrays
-    la $t0, directionChangeAddressArray
-    la $t1, newDirectionChangeArray
-    li $t2, 0
-    li $t3, 0
+    la $t0, directionChangeAddressArray # Load base address of address to $t0
+    la $t1, newDirectionChangeArray # Load base address of direction to $t1
+    li $t2, 0 # Make loop counter into 0
+    li $t3, 0 # Set zero value to store
     
     ClearArrayLoop:
-        sw $t3, 0($t0)
-        sw $t3, 0($t1)
-        addiu $t0, $t0, 4
-        addiu $t1, $t1, 4
-        addiu $t2, $t2, 4
-        bne $t2, 400, ClearArrayLoop
+        sw $t3, 0($t0) # Store 0 at current directionChangeAddressArray index
+        sw $t3, 0($t1) # Store 0 at current newdirectionChangeAddressArray index
+        addiu $t0, $t0, 4 # Move to next element in address array
+        addiu $t1, $t1, 4 # Move to next element in direction array
+        addiu $t2, $t2, 4 # Increment loop counter by 4 bytes
+        bne $t2, 400, ClearArrayLoop # Loop until 400 bytes cleared
     
     # Store the current head position and direction as the first entry
     # This ensures the tail knows which direction to go after clearing
-    lw $a0, snakeHeadX
-    lw $a1, snakeHeadY
-    jal CoordinateToAddress
+    lw $a0, snakeHeadX # Load snake head X position into $a0
+    lw $a1, snakeHeadY # Load snake head Y position into $a1
+    jal CoordinateToAddress # Call function to get screen address of head position
     move $a2, $v0  # Get head screen coordinates
     
-    la $t0, directionChangeAddressArray
-    la $t1, newDirectionChangeArray
-    sw $a2, 0($t0)  # Store head position
-    sw $t6, 0($t1)  # Store current direction
+    la $t0, directionChangeAddressArray # Reload base of address array
+    la $t1, newDirectionChangeArray # Reload base of direction array
+    sw $a2, 0($t0)  # Store head position # Store head address at beginning of address array
+    sw $t6, 0($t1)  # Store current direction # Store current direction at beginning of direction array
     li $t2, 4
     sw $t2, arrayPosition  # Set array position to 4 (after our new entry)
     
     # Restore return address and return
-    move $ra, $t9
-    jr $ra
+    move $ra, $t9 # Restore return address from saved register
+    jr $ra # Return to caller
 
 ######################################################
 # Check for Direction Change
@@ -713,68 +710,68 @@ lw $t8, snakeHeadX
 lw $t9, snakeHeadY
 
 # checks collision with fruits
-move $a0, $t8
-move $a1, $t9
+move $a0, $t8 # Move HeadX position to $t8
+move $a1, $t9 # Move HeadY position to $t9
 
 # checks collision for orange fruit
 lw $t0, fruitPositionX
 lw $t1, fruitPositionY
-jal CheckFruitCollision
+jal CheckFruitCollision # Check if snake head is on orange fruit
 li $s5, 1
-beq $v0, 1, AddLength
+beq $v0, 1, AddLength # If collide, go to AddLength
 
 # checks collision for green fruit
-lw $t0, fruitBombX
-lw $t1, fruitBombY
-jal CheckFruitCollision
-beq $v0, 1, Exit
+lw $t0, fruitBombX # Load light green fruit X
+lw $t1, fruitBombY # Load light green fruit X
+jal CheckFruitCollision # Check if snake head is on light green fruit
+beq $v0, 1, Exit # If collide, go to exit
 
 
 # checks collision for purple fruit
-lw $t0, fruitReverseX
-lw $t1, fruitReverseY
-jal CheckFruitCollision
+lw $t0, fruitReverseX # Load pruple fruit X
+lw $t1, fruitReverseY # Load pruple fruit Y
+jal CheckFruitCollision # Check if snake head is on purple fruit
 li $s5, 2
-beq $v0, 1, DoReverse
+beq $v0, 1, DoReverse # If collide, go to DoReverse
 
 # checks collision for cyan fruit
-lw $t0, fruitSpeedX
-lw $t1, fruitSpeedY
-jal CheckFruitCollision
+lw $t0, fruitSpeedX # Load cyan fruit X
+lw $t1, fruitSpeedY # Load cyan fruit X
+jal CheckFruitCollision # Check if snake head is on cyan fruit
 li $s5, 3
-beq $v0, 1, DoSpeed
+beq $v0, 1, DoSpeed # If collide, go to DoSpeed
 
 # draw orange
-lw $a0, fruitPositionX
-lw $a1, fruitPositionY
-jal CoordinateToAddress
-move $a0, $v0
-lw $a1, fruitColor
-jal DrawPixel
+lw $a0, fruitPositionX # Load orange X
+lw $a1, fruitPositionY # Load orange Y
+jal CoordinateToAddress # Convert the X and Y to coordinates
+move $a0, $v0 # Move address to $a0
+lw $a1, fruitColor # Load color for orange
+jal DrawPixel # Draw orange pixel
 
 # draw purple
-lw $a0, fruitReverseX
-lw $a1, fruitReverseY
-jal CoordinateToAddress
-move $a0, $v0
-lw $a1, fruitColorReverse
-jal DrawPixel
+lw $a0, fruitReverseX # Load purple X
+lw $a1, fruitReverseY # Load purple Y
+jal CoordinateToAddress # Convert the X and Y to coordinates
+move $a0, $v0 # Move address to $a0
+lw $a1, fruitColorReverse # Load color for purple
+jal DrawPixel # Draw purple pixel
 
 # draw cyan
-lw $a0, fruitSpeedX
-lw $a1, fruitSpeedY
-jal CoordinateToAddress
-move $a0, $v0
-lw $a1, fruitColorSpeed
-jal DrawPixel
+lw $a0, fruitSpeedX # Load cyan X
+lw $a1, fruitSpeedY # Load cyan Y
+jal CoordinateToAddress # Convert the X and Y to coordinates
+move $a0, $v0 # Move address to $a0
+lw $a1, fruitColorSpeed # Load color for cyan
+jal DrawPixel # Draw cyan pixel
 
 # draw bomb
-lw $a0, fruitBombX
-lw $a1, fruitBombY
-jal CoordinateToAddress
-move $a0, $v0
-lw $a1, fruitColorBomb
-jal DrawPixel
+lw $a0, fruitBombX # Load light green X
+lw $a1, fruitBombY # Load light green Y
+jal CoordinateToAddress # Convert the X and Y to coordinates
+move $a0, $v0 # Move address to $a0
+lw $a1, fruitColorBomb # Load color for light green
+jal DrawPixel # Draw light green pixel
 
 # loop back into game
 j InputCheck
@@ -785,121 +782,122 @@ lw $t2, direction         # current direction
 li $t3, 115               # down (invalid if we're going up)
 beq $t2, 119, SkipUp      # skip if already going up
 beq $t2, $t3, SkipUp      # skip if opposite of up
-lw $a0, snakeHeadX
-lw $a1, snakeHeadY
+lw $a0, snakeHeadX 	  # Load snake head x
+lw $a1, snakeHeadY	  # Load snake head y
 addiu $a1, $a1, -1        # simulate moving up
-jal CoordinateToAddress
+jal CoordinateToAddress   # Convert coordinates to screen address
 lw $t4, 0($v0)            # color at that location
-lw $t5, snakeColor
-lw $t6, borderColor
-beq $t4, $t5, SkipUp
-beq $t4, $t6, SkipUp
+lw $t5, snakeColor	  # Load snake color
+lw $t6, borderColor	  # Load border color
+beq $t4, $t5, SkipUp 	  # Skip if collision with snake
+beq $t4, $t6, SkipUp	  # Skip if collision with border
 li $t2, 119               # set new direction to up
 j SetDirection
 
 SkipUp:
 # Try RIGHT (100)
-li $t3, 97
-beq $t2, 100, SkipRight
-beq $t2, $t3, SkipRight
-lw $a0, snakeHeadX
-lw $a1, snakeHeadY
-addiu $a0, $a0, 1
-jal CoordinateToAddress
-lw $t4, 0($v0)
-beq $t4, $t5, SkipRight
+li $t3, 97 		  # Opposite is left
+beq $t2, 100, SkipRight	  # Skip if going right
+beq $t2, $t3, SkipRight   # Skip if opposite
+lw $a0, snakeHeadX	  # Load snake head x
+lw $a1, snakeHeadY	  # Load snake head y
+addiu $a0, $a0, 1         # Simulate right
+jal CoordinateToAddress   # Convert coordinates to screen address
+lw $t4, 0($v0)		  # Load pixel color
+beq $t4, $t5, SkipRight   # Collision checks
 beq $t4, $t6, SkipRight
-li $t2, 100
+li $t2, 100		  # Set right
 j SetDirection
 
 SkipRight:
-# Try DOWN (115)
-li $t3, 119
-beq $t2, 115, SkipDown
-beq $t2, $t3, SkipDown
-lw $a0, snakeHeadX
-lw $a1, snakeHeadY
-addiu $a1, $a1, 1
-jal CoordinateToAddress
-lw $t4, 0($v0)
-beq $t4, $t5, SkipDown
+# Try DOWN (115)	 
+li $t3, 119		  # Opposite is up
+beq $t2, 115, SkipDown	  # Skip if already down
+beq $t2, $t3, SkipDown	  # Skip if opposite
+lw $a0, snakeHeadX	  # Load snake head x
+lw $a1, snakeHeadY	  # Load snake head y
+addiu $a1, $a1, 1	  # Simulate down
+jal CoordinateToAddress   # Convert coordinates to screen address
+lw $t4, 0($v0)		  # Load pixel color
+beq $t4, $t5, SkipDown	  # Collision checks
 beq $t4, $t6, SkipDown
-li $t2, 115
+li $t2, 115		  # Set down
 j SetDirection
 
 SkipDown:
 # Try LEFT (97)
-li $t3, 100
-beq $t2, 97, EndReverse
-beq $t2, $t3, EndReverse
-lw $a0, snakeHeadX
-lw $a1, snakeHeadY
-addiu $a0, $a0, -1
-jal CoordinateToAddress
-lw $t4, 0($v0)
-beq $t4, $t5, EndReverse
+li $t3, 100		# Opposite is right
+beq $t2, 97, EndReverse # Skip if already left
+beq $t2, $t3, EndReverse # Skip if opposite
+lw $a0, snakeHeadX	# Load snake head x
+lw $a1, snakeHeadY	# Load snake head y
+addiu $a0, $a0, -1      # Simulate left
+jal CoordinateToAddress # Convert coordinates to screen address
+lw $t4, 0($v0)		# Load pixel color
+beq $t4, $t5, EndReverse # Collision checks
 beq $t4, $t6, EndReverse
-li $t2, 97
+li $t2, 97		# Set left
 
 SetDirection:
-sw $t2, direction
-move $t7, $t2
+sw $t2, direction	# Store new direction
+move $t7, $t2		# Update working regester
 
 StoreNewDir:
     # Get head coordinates *before* direction changes
-    lw $a0, snakeHeadX
-    lw $a1, snakeHeadY
+    lw $a0, snakeHeadX # Load snake head x
+    lw $a1, snakeHeadY # Load snake head y
     jal CoordinateToAddress
-    move $a2, $v0            # $a2 = current head address
+    move $a2, $v0            # $a2 is current head address
 
     li $a0, 0                # Temporarily dummy current direction (not used)
     move $a1, $t2            # $a1 = new direction we want to force
     li $v0, 1                # Force acceptability
     # MANUALLY insert turn into arrays instead of calling CheckDirection
-    lw $t4, arrayPosition
-    la $t2, directionChangeAddressArray
-    la $t3, newDirectionChangeArray
-    add $t2, $t2, $t4
+    lw $t4, arrayPosition # Load array index
+    la $t2, directionChangeAddressArray # Load base address for position
+    la $t3, newDirectionChangeArray # Load base address for new direction
+    add $t2, $t2, $t4        # Index into array
     add $t3, $t3, $t4
     sw $a2, 0($t2)           # store coordinate
     sw $a1, 0($t3)           # store new direction
     addiu $t4, $t4, 4
     bne $t4, 396, SkipReset
     li $t4, 0
-    
+
+# Saves index    
 SkipReset:
-    sw $t4, arrayPosition
+    sw $t4, arrayPosition # Save updated array index
 
     # Now apply the new direction
-    sw $a1, direction
-    move $t7, $a1
+    sw $a1, direction # Stores direction
+    move $t7, $a1 # Update register
 
-    j EndReverse
+    j EndReverse # If done skip rest
 
 
 EndReverse:
 # respawn purple fruit here
-li $v0, 42
-li $a1, 62
-syscall
+li $v0, 42 # Load syscall for random number generator
+li $a1, 62 # Upper bound
+syscall # Generate purple x
 addiu $a0, $a0, 1
-sw $a0, fruitReverseX
-syscall
-addiu $a0, $a0, 1
-sw $a0, fruitReverseY
+sw $a0, fruitReverseX # Save new purple x
+syscall # Generate purple y
+addiu $a0, $a0, 1 # Shift by 1
+sw $a0, fruitReverseY # Save new purple y
 j AddLength
 
 DoSpeed:
-lw $t3, gameSpeed
-addiu $t3, $t3, -30
-slti $t4, $t3, 50
-beq $t4, 1, SetMinSpeed
-sw $t3, gameSpeed
+lw $t3, gameSpeed # Load current game speed
+addiu $t3, $t3, -30 # Decrease by 30
+slti $t4, $t3, 50 # Set $t4 to 1 if new speed is less than 50
+beq $t4, 1, SetMinSpeed # If too fast, go to minimum
+sw $t3, gameSpeed # If not, store new speed
 j AddLength
 
 SetMinSpeed:
-li $t3, 50
-sw $t3, gameSpeed
+li $t3, 50 # Set minimum allowed game speed
+sw $t3, gameSpeed # Store it as the gameSpeed value
 j AddLength
 
 AddLength:
