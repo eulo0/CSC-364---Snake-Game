@@ -265,19 +265,22 @@ SpawnFruit:
     lw $a0, fruitPositionX # Load X position of orange into $a0
     lw $a1, fruitPositionY # Load Y position of orange into $a1
     jal ClearOldFruitPosition # Call to clear orange last drawn position
-    
+
+    # Clears orange position
     SkipOrange:
     beq $t0, 2, SkipPurple # If last fruit pruple, skip clearing purple's position
     lw $a0, fruitReverseX # Load X position of purple into $a0
     lw $a1, fruitReverseY # Load Y position of purple into $a1
     jal ClearOldFruitPosition # Call to clear purple last drawn position
-    
+
+    # Clears purple position
     SkipPurple:
     beq $s5, 3, SkipCyan # If last fruit cyan, skip clearing purple's position
     lw $a0, fruitSpeedX # Load X position of cyan into $a0
     lw $a1, fruitSpeedY # Load Y position of cyan into $a0
     jal ClearOldFruitPosition # Call to clear cyan last drawn position
-    
+
+    # Clears cyan position
     SkipCyan:
     lw $a0, fruitBombX # Load X position of light green into $a0
     lw $a1, fruitBombY # Load Y position of light green into $a0
@@ -341,7 +344,8 @@ SpawnFruit:
 
     jal IncreaseDifficulty # Call function to increase game difficulty 
     j InputCheck # Jump to input
-    
+
+# Clears the old fruits position
 ClearOldFruitPosition:
 move $t9, $ra # Save return address into $t9
 add $t0, $a0, $0 # Copy X coordinate 
@@ -372,7 +376,8 @@ ClearDirectionArrays:
     la $t1, newDirectionChangeArray # Load base address of direction to $t1
     li $t2, 0 # Make loop counter into 0
     li $t3, 0 # Set zero value to store
-    
+
+    # Clears the array loop
     ClearArrayLoop:
         sw $t3, 0($t0) # Store 0 at current directionChangeAddressArray index
         sw $t3, 0($t1) # Store 0 at current newdirectionChangeAddressArray index
@@ -778,6 +783,7 @@ jal DrawPixel # Draw light green pixel
 # loop back into game
 j InputCheck
 
+# Purple fruit logic for random direction
 DoReverse:
 # Try UP (119)
 lw $t2, direction         # current direction
@@ -796,6 +802,7 @@ beq $t4, $t6, SkipUp	  # Skip if collision with border
 li $t2, 119               # set new direction to up
 j SetDirection
 
+# Checks if going up
 SkipUp:
 # Try RIGHT (100)
 li $t3, 97 		  # Opposite is left
@@ -811,6 +818,7 @@ beq $t4, $t6, SkipRight
 li $t2, 100		  # Set right
 j SetDirection
 
+# Checks if going right
 SkipRight:
 # Try DOWN (115)	 
 li $t3, 119		  # Opposite is up
@@ -826,6 +834,7 @@ beq $t4, $t6, SkipDown
 li $t2, 115		  # Set down
 j SetDirection
 
+# Checks if going down
 SkipDown:
 # Try LEFT (97)
 li $t3, 100		# Opposite is right
@@ -840,10 +849,12 @@ beq $t4, $t5, EndReverse # Collision checks
 beq $t4, $t6, EndReverse
 li $t2, 97		# Set left
 
+# Sets the direction
 SetDirection:
 sw $t2, direction	# Store new direction
 move $t7, $t2		# Update working regester
 
+# Stores the direction
 StoreNewDir:
     # Get head coordinates *before* direction changes
     lw $a0, snakeHeadX # Load snake head x
@@ -876,7 +887,7 @@ SkipReset:
 
     j EndReverse # If done skip rest
 
-
+# When logic is done, respawn purple fruit
 EndReverse:
 # respawn purple fruit here
 li $v0, 42 # Load syscall for random number generator
@@ -889,6 +900,7 @@ addiu $a0, $a0, 1 # Shift by 1
 sw $a0, fruitReverseY # Save new purple y
 j AddLength
 
+# Cyan fruit speed increase logic
 DoSpeed:
 lw $t3, gameSpeed # Load current game speed
 addiu $t3, $t3, -30 # Decrease by 30
@@ -897,6 +909,7 @@ beq $t4, 1, SetMinSpeed # If too fast, go to minimum
 sw $t3, gameSpeed # If not, store new speed
 j AddLength
 
+# Sets Minimum length
 SetMinSpeed:
 li $t3, 50 # Set minimum allowed game speed
 sw $t3, gameSpeed # Store it as the gameSpeed value
