@@ -17,6 +17,7 @@
 ######################################################################
 .data
 #Game Core information
+newLine: .asciiz "\n"
 
 #Screen
 screenWidth: .word 64
@@ -30,6 +31,7 @@ fruitColor: .word 0xcc6611 # orange
 fruitColorReverse: .word 0x800080  # Purple - reverses direction
 fruitColorSpeed: .word 0x00ffff    # Cyan - increases speed
 fruitColorBomb: .word 0x99ff99     # Light green - bomb kills snake
+fruitColorLarge: .word 0xffff00    # yellow - large fruit
 #score variable
 score: .word 0
 #stores how many points are recieved for eating a fruit
@@ -75,9 +77,12 @@ fruitSpeedX: .word 0
 fruitSpeedY: .word 0
 fruitBombX: .word 0
 fruitBombY: .word 0
+fruitLargeX: .word 0
+fruitLargeY: .word 0
 scoreString: .asciiz "Current Score: "
 clearString: .asciiz "\n\n\n\n\n\n\n\n\n\n\n\n\n"
 fruitLastEaten: .word 0
+fruitsInitialized: .word 0
 
 .text
 main:
@@ -125,6 +130,8 @@ sw $t0, fruitSpeedX
 sw $t0, fruitSpeedY
 sw $t0, fruitBombX
 sw $t0, fruitBombY
+sw $t0, fruitLargeX
+sw $t0, fruitLargeY
 ClearRegisters:
 li $v0, 0
 li $a0, 0
@@ -262,6 +269,7 @@ j InputCheck        # Start the game loop
 # Spawn Fruit
 ######################################################
 SpawnFruit:
+
     lw $t0, fruitLastEaten # Loads the last fruit 1=orange, 2=purple, etc
     
     beq $t0, 1, SkipOrange # If last fruit orange, skip clearing orange's position
@@ -286,9 +294,83 @@ SpawnFruit:
 
     # Clears cyan position
     SkipCyan:
-    lw $a0, fruitBombX # Load X position of light green into $a0
-    lw $a1, fruitBombY # Load Y position of light green into $a0
+    lw $a0, fruitLargeX # load x position of large into $a0
+    lw $a1, fruitLargeY # load y position of large into $a1
+    jal ClearOldFruitPosition
+    
+    # Clears green position
+    lw $a0, fruitBombX # load x position 
+    lw $a1, fruitBombY # load y position
+    jal ClearOldFruitPosition
+    
+    # clears large fruit top left position
+    lw $a0, fruitLargeX # Load X position of light green into $a0
+    lw $a1, fruitLargeY # Load Y position of light green into $a0
+    addi $a0, $a0, -1
+    addi $a1, $a1, -1
     jal ClearOldFruitPosition # Call to clear light green last drawn position
+    
+    # clears large fruit top middle position
+    lw $a0, fruitLargeX # Load X position of light green into $a0
+    lw $a1, fruitLargeY # Load Y position of light green into $a0
+    addi $a1, $a1, -1
+    jal ClearOldFruitPosition # Call to clear light green last drawn position
+    
+    # clears large fruit top right position
+    lw $a0, fruitLargeX # Load X position of light green into $a0
+    lw $a1, fruitLargeY # Load Y position of light green into $a0
+    addi $a0, $a0, 1
+    addi $a1, $a1, -1
+    jal ClearOldFruitPosition # Call to clear light green last drawn position
+    
+    # clears large fruit mid left position
+    lw $a0, fruitLargeX # Load X position of light green into $a0
+    lw $a1, fruitLargeY # Load Y position of light green into $a0
+    addi $a0, $a0, -1
+    jal ClearOldFruitPosition # Call to clear light green last drawn position
+    
+    # clears large fruit midmid position
+    lw $a0, fruitLargeX # Load X position of light green into $a0
+    lw $a1, fruitLargeY # Load Y position of light green into $a0
+    jal ClearOldFruitPosition # Call to clear light green last drawn position
+    
+    # clears large fruit mid right position
+    lw $a0, fruitLargeX # Load X position of light green into $a0
+    lw $a1, fruitLargeY # Load Y position of light green into $a0
+    addi $a0, $a0, 1
+    jal ClearOldFruitPosition # Call to clear light green last drawn position
+    
+    # clears large fruit btm left position
+    lw $a0, fruitLargeX # Load X position of light green into $a0
+    lw $a1, fruitLargeY # Load Y position of light green into $a0
+    addi $a0, $a0, -1
+    addi $a1, $a1, 1
+    jal ClearOldFruitPosition # Call to clear light green last drawn position
+    
+    # clears large fruit btm mid position
+    lw $a0, fruitLargeX # Load X position of light green into $a0
+    lw $a1, fruitLargeY # Load Y position of light green into $a0
+    addi $a1, $a1, 1
+    jal ClearOldFruitPosition # Call to clear light green last drawn position
+    
+    # clears large fruit btm right position
+    lw $a0, fruitLargeX # Load X position of light green into $a0
+    lw $a1, fruitLargeY # Load Y position of light green into $a0
+    addi $a0, $a0, 1
+    addi $a1, $a1, 1
+    jal ClearOldFruitPosition # Call to clear light green last drawn position
+    
+    la $t8, fruitsInitialized # fruits have been drawn once, set fruits initialized to 1
+    li $t7, 1 # this word label will be used when drawing fruits. we dont want to clear fruits...
+    sw $t7, 0($t8) #...the first time fruits are drawn (adding my large fruit was breaking things and this fixed it)
+    
+    # deleting a large fruit can delete the snake head, so redraw only the snake head
+    lw $a0, snakeHeadX # Load purple X
+    lw $a1, snakeHeadY # Load purple Y
+    jal CoordinateToAddress # Convert the X and Y to coordinates
+    move $a0, $v0 # Move address to $a0
+    lw $a1, snakeColor # Load color for snake
+    jal DrawPixel # Draw snake head
     
     # Prints the score
     li $v0, 4 # Print string 
@@ -300,6 +382,16 @@ SpawnFruit:
     li $v0, 1 # Print integer syscall
     lw $a0, score # Load current score to $a0
     syscall # Print score
+    
+    # Spawn large fruit
+    li $v0, 42 # Random number syscall
+    li $a1, 60 # Upperbound
+    syscall # Generate number
+    addiu $a0, $a0, 2 #Offset by 2
+    sw $a0, fruitLargeX # Store large X
+    syscall # Generate another random number 
+    addiu $a0, $a0, 2 #Offset by 2
+    sw $a0, fruitLargeY # Store orange Y
 
     # Spawn orange fruit
     li $v0, 42 # Random number syscall
@@ -356,6 +448,11 @@ add $t0, $a0, $0 # Copy X coordinate
 add $t1, $a1, $0 # Copy Y coordinate
 jal CoordinateToAddress # Convert X Y to coordinate 
 move $a0, $v0 # Move made coordinate for drawing pixel
+la $t8, fruitsInitialized # dont clear fruits if game just started; it will delete part of the border
+lw $t8, 0($t8) # no reason to draw black onto anything on our first fruit spawn, so...
+beq $t8, 1, DoClear # only clear if border wasnt just initialized
+jr $t9 # Return to $ra stored at $t9
+DoClear:
 lw $a1, backgroundColor # Load background color to erase fruit
 jal DrawPixel # Draw pixel at (X,Y)
 jr $t9 # Return to $ra stored at $t9
@@ -752,6 +849,13 @@ jal CheckFruitCollision # Check if snake head is on cyan fruit
 li $s5, 3
 beq $v0, 1, DoSpeed # If collide, go to DoSpeed
 
+# checks collision for large fruit
+lw $t0, fruitLargeX # load large fruit x
+lw $t1, fruitLargeY # load large fruit y
+jal CheckLargeFruitCollision # check if snake head is within large fruit bounds
+li $s5, 4
+beq $v0, 1, DoLarge # if collide, go to do large
+
 # draw orange
 lw $a0, fruitPositionX # Load orange X
 lw $a1, fruitPositionY # Load orange Y
@@ -783,6 +887,90 @@ jal CoordinateToAddress # Convert the X and Y to coordinates
 move $a0, $v0 # Move address to $a0
 lw $a1, fruitColorBomb # Load color for light green
 jal DrawPixel # Draw light green pixel
+
+# topleft pixel large fruit
+lw $a0, fruitLargeX # load large x
+lw $a1, fruitLargeY # load large y
+addi $a0, $a0, -1
+addi $a1, $a1, -1
+jal CoordinateToAddress
+move $a0, $v0
+lw $a1, fruitColorLarge
+jal DrawPixel
+
+# topmid pixel large fruit
+lw $a0, fruitLargeX # load large x
+lw $a1, fruitLargeY # load large y
+addi $a1, $a1, -1
+jal CoordinateToAddress
+move $a0, $v0
+lw $a1, fruitColorLarge
+jal DrawPixel
+
+# topright pixel large fruit
+lw $a0, fruitLargeX # load large x
+lw $a1, fruitLargeY # load large y
+addi $a0, $a0, 1
+addi $a1, $a1, -1
+jal CoordinateToAddress
+move $a0, $v0
+lw $a1, fruitColorLarge
+jal DrawPixel
+
+# midleft pixel large fruit
+lw $a0, fruitLargeX # load large x
+lw $a1, fruitLargeY # load large y
+addi $a0, $a0, -1
+jal CoordinateToAddress
+move $a0, $v0
+lw $a1, fruitColorLarge
+jal DrawPixel
+
+# midmid pixel large fruit
+lw $a0, fruitLargeX # load large x
+lw $a1, fruitLargeY # load large y
+jal CoordinateToAddress
+move $a0, $v0
+lw $a1, fruitColorLarge
+jal DrawPixel
+
+# midright pixel large fruit
+lw $a0, fruitLargeX # load large x
+lw $a1, fruitLargeY # load large y
+addi $a0, $a0, 1
+jal CoordinateToAddress
+move $a0, $v0
+lw $a1, fruitColorLarge
+jal DrawPixel
+
+# btmleft pixel large fruit
+lw $a0, fruitLargeX # load large x
+lw $a1, fruitLargeY # load large y
+addi $a0, $a0, -1
+addi $a1, $a1, 1
+jal CoordinateToAddress
+move $a0, $v0
+lw $a1, fruitColorLarge
+jal DrawPixel
+
+# btmmid pixel large fruit
+lw $a0, fruitLargeX # load large x
+lw $a1, fruitLargeY # load large y
+addi $a1, $a1, 1
+jal CoordinateToAddress
+move $a0, $v0
+lw $a1, fruitColorLarge
+jal DrawPixel
+
+# btmright pixel large fruit
+lw $a0, fruitLargeX # load large x
+lw $a1, fruitLargeY # load large y
+addi $a0, $a0, 1
+addi $a1, $a1, 1
+jal CoordinateToAddress
+move $a0, $v0
+lw $a1, fruitColorLarge
+jal DrawPixel
 
 # loop back into game
 j InputCheck
@@ -930,6 +1118,28 @@ j AddLength
 SetMinSpeed:
 li $t3, 50 # Set minimum allowed game speed
 sw $t3, gameSpeed # Store it as the gameSpeed value
+j AddLength
+
+DoLarge:
+#update the score again; large fruit gives extra points
+lw $t5, score
+lw $t6, scoreGain
+add $t5, $t5, $t6
+add $t5, $t5, $t6
+add $t5, $t5, $t6
+sw $t5, score
+# play sound again to let the player know they got more points
+li $v0, 31
+li $a0, 79
+li $a1, 150
+li $a2, 7
+li $a3, 127
+syscall
+li $a0, 96
+li $a1, 250
+li $a2, 7
+li $a3, 127
+syscall
 j AddLength
 
 DoExplosion:
@@ -1204,6 +1414,46 @@ jr $ra
 # 0 - does not hit fruit
 # 1 - does hit fruit
 ##################################################################
+
+CheckLargeFruitCollision:
+add $v0, $zero, $zero # default to no collision
+
+# check to see if x is greater than position-1
+addi $t0, $t0, -1
+blt, $a0, $t0, CollisionFailureType1
+
+# check to see if x is less than position+1
+addi $t0, $t0, 2
+bgt, $a0, $t0, CollisionFailureType2
+
+# x is within the bounds of the large fruit. reset $t0 back to where it should be then check y
+addi $t0, $t0, -1
+
+# check to see if y is greater than position-1
+addi $t1, $t1, -1
+blt, $a1, $t1, CollisionFailureType3
+
+# check to see if y is less than position+1
+addi $t1, $t1, 2
+bgt, $a1, $t1, CollisionFailureType4
+
+# we now know there was a collision. reset $t1 back to where it should be then continue
+addi $t1, $t1, -1
+j YEqualFruit
+
+CollisionFailureType1: # x is less than bounds, undo math done on $t0
+addi $t0, $t0, 2 # set to x+1, next instruction will reset back to x+0
+CollisionFailureType2: # x is greater than bounds, undo math done to $t0
+addi $t0, $t0, -1 # reset $t0 back to x+0
+j ExitCollisionCheck # since collision failed, exit
+
+CollisionFailureType3: # y is less than bounds, undo math done on $t1
+addi $t1, $t1, 2 # set to y+1, next instruction will reset back to y+0
+CollisionFailureType4: # y is greater than bounds, undo math done to $t1
+addi $t1, $t1, -1 # reset $t1 back to y+0
+j ExitCollisionCheck # since collision failed, exit
+
+
 CheckFruitCollision:
 #set $v0 to zero, to default to no collision
 add $v0, $zero, $zero
